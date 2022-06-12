@@ -10,6 +10,7 @@ inode::inode()
 {
     this->size = -1;
     this->first_block = -1;
+    this->is_file = false;
 }// inode
 
 
@@ -26,6 +27,22 @@ my_dirent::my_dirent()
         this->fds[i] = -1;
     } 
 }// my_dirent
+
+
+my_file::my_file()
+{
+    this->fd = -1;
+    this->pos = -1;
+    this->is_opened = false;
+}
+
+
+void my_file::set_data(int _fd, int _pos, bool _is_opened)
+{
+    this->fd = _fd;
+    this->pos = _pos;
+    this->is_opened = _is_opened;
+}
 
 
 int find_empty_block()
@@ -183,11 +200,72 @@ int mymount(const char *source, const char *target, const char *filesystemtype, 
 
 
 int myopen(const char *pathname, int flags)
+{ 
+    if (pathname == NULL)
+    {
+        printf("path can't be NULL ptr!\n");
+        return -1;
+    }
+    int i;
+    for (i = 0; i < sb.num_inodes; i++)
+    {
+        if (strcmp(inodes[i].name.c_str(), pathname) == 0)
+        {
+            if (!inodes[i].is_file)
+            {
+                printf("This is a dir inode..\n");
+                return -1;
+            }
+            myopenfile[i].set_data(i,0,true);
+            return i;
+        }
+    }
+    i = 0;
+    std::string name;
+    while(pathname[i])
+    {
+        if (pathname[i] != '/')
+        {
+            name += pathname[i];
+        }
+        else
+        {
+            name.clear();
+        }
+    }
+    int fd = alloc_file(name, sizeof(mydirent));
+    mydirent* dir = myreaddir(myopendir(pathname));
+    dir->fds[dir->size++] = fd;
+    myopenfile[fd].set_data(fd,0,true);
+    return fd;
+}
+
+
+int myclose(int myfd)
 {
+    myopenfile[myfd].set_data(-1,-1,false);
+}
+
+
+size_t myread(int myfd, void *buf, size_t count)                          // not finished
+{
+    if (buf == NULL )
+    {
+        printf("myread - buf can't be a NULL ptr..\n");
+        return -1;
+    }
+    if (!inodes[myfd].is_file || myopenfile[myfd].fd != myfd)
+    {
+        printf("myread - prob with myfd..\n");
+        return -1;
+    }
+    std::string temp;
+    // for (int i = 0; i < count; i++)
+    // {
+
+    // }
     
 }
-int myclose(int myfd);
-size_t myread(int myfd, void *buf, size_t count);
 size_t mywrite(int myfd, const void *buf, size_t count);
 off_t mylseek(int myfd, off_t offset, int whence);
 myDIR *myopendir(const char *name);

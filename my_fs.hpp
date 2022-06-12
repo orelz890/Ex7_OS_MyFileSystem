@@ -19,6 +19,7 @@ typedef struct inode
 {
     int size;
     int first_block;
+    bool is_file;
     std::string name;
 
     inode();
@@ -37,7 +38,11 @@ typedef struct disk_block
 typedef struct my_file 
 {
     int fd;
-    int pos; 
+    int pos;
+    bool is_opened;
+
+    my_file();
+    void set_data(int _fd, int _pos, bool _is_opened);
 }my_file;
 
 
