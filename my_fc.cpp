@@ -113,6 +113,29 @@ int alloc_file(std::string name, int size)
 }
 
 
+// write the file system
+void sync_fs(const char *file_name)
+{
+    FILE *file = fopen(file_name, "w+");
+    // super block
+    fwrite(&sb, sizeof(struct super_block), 1, file);
+
+    // inodes
+    int i;
+    for (i = 0; i < sb.num_inodes; i++)
+    {
+        fwrite(&(inodes[i]), sizeof(struct inode), 1, file);    
+    }// write inodes
+    
+    for (i = 0; i < sb.num_inodes; i++)
+    {
+        fwrite(&(dbs[i]), sizeof(struct disk_block), sb.num_blocks, file);        
+    }// write db
+
+    fclose(file);
+}
+
+
 // Initialize new filesystem
 void mymkfs(int size)
 {
@@ -128,9 +151,41 @@ void mymkfs(int size)
 
 int mymount(const char *source, const char *target, const char *filesystemtype, unsigned long mountflags, const void *data)
 {
+    if (source != NULL && target != NULL)
+    {
+        // write the file system
+        sync_fs(source);
+
+        // read to the dest file
+        FILE *file = fopen(target, "r");
+        // super block
+        fread(&sb, sizeof(struct super_block), 1, file);
+
+        // inodes
+        int i;
+        for (i = 0; i < sb.num_inodes; i++)
+        {
+            fread(&(inodes[i]), sizeof(struct inode), 1, file);
+        }// write inodes
+        
+        for (i = 0; i < sb.num_blocks; i++)
+        {
+            fread(&(dbs[i]), sizeof(struct disk_block), 1, file);
+        }// write db
+        
+        fclose(file);
+    }
+    else
+    {
+        source == NULL? printf("Source can't be a NULL ptr!\n") : printf("Target can't be a NULL ptr!\n");
+    }
+}
+
+
+int myopen(const char *pathname, int flags)
+{
     
 }
-int myopen(const char *pathname, int flags);
 int myclose(int myfd);
 size_t myread(int myfd, void *buf, size_t count);
 size_t mywrite(int myfd, const void *buf, size_t count);
