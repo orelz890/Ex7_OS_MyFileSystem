@@ -1,11 +1,6 @@
 #include "my_fs.hpp"
 
 
-// my_file myopenfile[MAX_FILES];
-// super_block sb;
-// inode *inodes;
-// disk_block *dbs;
-
 inode::inode()
 {
     this->size = -1;
@@ -34,7 +29,7 @@ my_file::my_file()
     this->fd = -1;
     this->pos = -1;
     this->is_opened = false;
-}
+}// my_file
 
 
 void my_file::set_data(int _fd, int _pos, bool _is_opened)
@@ -42,7 +37,7 @@ void my_file::set_data(int _fd, int _pos, bool _is_opened)
     this->fd = _fd;
     this->pos = _pos;
     this->is_opened = _is_opened;
-}
+}// set_data
 
 
 int find_empty_block()
@@ -80,7 +75,7 @@ void shorten_file(int bn)
         shorten_file(nn);
     }
     dbs[bn].next_block_num = -1;
-}
+}// shorten_file
 
 
 void set_filesize(int filenum, int size)
@@ -106,7 +101,7 @@ void set_filesize(int filenum, int size)
     // short if necessary
     shorten_file(bn);
     dbs[bn].next_block_num = -2;
-}
+}// set_filesize
 
 
 int alloc_file(std::string name, int size)
@@ -127,7 +122,7 @@ int alloc_file(std::string name, int size)
         exit(1);
     }
     return empty_inode;
-}
+}// alloc_file
 
 
 // write the file system
@@ -150,7 +145,7 @@ void sync_fs(const char *file_name)
     }// write db
 
     fclose(file);
-}
+}// sync_fs
 
 
 // Initialize new filesystem
@@ -163,7 +158,7 @@ void mymkfs(int size)
     sb.num_blocks = (size - (sb.num_inodes * inode_size))/block_size;
     dbs = new disk_block[sb.num_blocks];
     // alloc_file("init", sizeof(mydirent));
-}
+}// mymkfs
 
 
 int mymount(const char *source, const char *target, const char *filesystemtype, unsigned long mountflags, const void *data)
@@ -196,7 +191,7 @@ int mymount(const char *source, const char *target, const char *filesystemtype, 
     {
         source == NULL? printf("Source can't be a NULL ptr!\n") : printf("Target can't be a NULL ptr!\n");
     }
-}
+}// mymount
 
 
 int myopen(const char *pathname, int flags)
@@ -238,16 +233,16 @@ int myopen(const char *pathname, int flags)
     dir->fds[dir->size++] = fd;
     myopenfile[fd].set_data(fd,0,true);
     return fd;
-}
+}// myopen
 
 
 int myclose(int myfd)
 {
     myopenfile[myfd].set_data(-1,-1,false);
-}
+}// myclose
 
 
-size_t myread(int myfd, void *buf, size_t count)                          // not finished
+size_t myread(int myfd, void *buf, size_t count)
 {
     if (buf == NULL )
     {
@@ -277,7 +272,7 @@ size_t myread(int myfd, void *buf, size_t count)                          // not
     }
     strncmp((char*)buf, temp.c_str(), count);
     return myopenfile[myfd].pos;
-}
+}// myread
 
 
 size_t mywrite(int myfd, const void *buf, size_t count)
@@ -321,19 +316,19 @@ size_t mywrite(int myfd, const void *buf, size_t count)
         myopenfile[myfd].pos++;
     }
     return myopenfile[myfd].pos;
-}
+}// mywrite
 
 
 off_t mylseek(int myfd, off_t offset, int whence)              //  not finished!!
 {
 
-}
+}// mylseek
 
 
 myDIR *myopendir(const char *name)              //  not finished!!
 {
 
-}
+}// myopendir
 
 
 mydirent *myreaddir(myDIR *dirp)
@@ -345,14 +340,14 @@ mydirent *myreaddir(myDIR *dirp)
     }
     int curr_block = inodes[dirp->n].first_block;
     return (mydirent*)dbs[curr_block].data;
-}
+}// myreaddir
 
 
 int myclosedir(myDIR *dirp)
 {
     dirp->n = -1;
     dirp->name.clear();
-}
+}// myclosedir
 
 
 void print_fs()
@@ -375,4 +370,4 @@ void print_fs()
     {
         printf("\tblock num: %d next block %d\n\n", i, dbs[i].next_block_num);
     }
-}
+}// print_fs
