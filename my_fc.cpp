@@ -5,6 +5,7 @@ inode::inode()
 {
     this->size = -1;
     this->first_block = -1;
+    this->end_block = 0;
     this->is_file = false;
 }// inode
 
@@ -221,7 +222,7 @@ int myopen(const char *pathname, int flags)
     {
         if (pathname[i] != '/')
         {
-            name += pathname[i];
+            name = pathname[i];
         }
         else
         {
@@ -289,6 +290,7 @@ size_t mywrite(int myfd, const void *buf, size_t count)
     }
     for (int i = 0; i < count; i++)
     {
+        inodes[myfd].end_block++;
         int pos = myopenfile[myfd].pos - BLOCK_SIZE;
         int curr_block = inodes[myfd].first_block;
         for(;pos >= BLOCK_SIZE; pos-= BLOCK_SIZE)
@@ -319,15 +321,111 @@ size_t mywrite(int myfd, const void *buf, size_t count)
 }// mywrite
 
 
-off_t mylseek(int myfd, off_t offset, int whence)              //  not finished!!
+off_t mylseek(int myfd, off_t offset, int whence)
 {
-
+    if (myopenfile[myfd].fd == myfd)
+    {
+        myopenfile[myfd].pos = myopenfile[myfd].pos < 0? 0 : myopenfile[myfd].pos; 
+        if (whence == SEEK_CUR)
+        {
+            myopenfile[myfd].pos += offset;
+        }
+        else if (whence == SEEK_SET)
+        {
+            myopenfile[myfd].pos = offset;
+        }
+        else if (whence == SEEK_END)
+        {
+            myopenfile[myfd].pos += inodes[myfd].end_block;
+        }
+        return myopenfile[myfd].pos;
+    }
+    printf("mylseek - myfd is not valid..\n");
+    return -1;
 }// mylseek
 
 
 myDIR *myopendir(const char *name)              //  not finished!!
 {
+    char str[100];
+    strcpy(str, name);
+    char *choset;
+    char s = '/';
+    choset = strtok(str, &s);
+    std::string this_p;
+    std::string last_p;
 
+    while (choset != NULL)
+    {
+        last_p = this_p;
+        this_p = choset;
+        choset = strtok(NULL, &s);
+    }
+
+    for (int i = 0; i < sb.num_inodes; i++)
+    {
+        if (inodes[i].name == this_p)
+        {
+            if (!inodes[i].is_file)
+            {
+                printf("%s\n", inodes[i].name);
+                perror("inodes[i].dir!=1");
+                exit(1);
+            }
+            myDIR *res = (myDIR *)malloc(sizeof(myDIR));
+            res-> n =i;
+            return res;
+        }
+    }
+
+    int fd = myopendir(last_p.c_str())->n;
+    if (fd == -1)
+    {
+        perror("fd == -1");
+        exit(1);
+    }
+
+    if (inodes[fd].is_file)
+    {
+        perror("inodes[fd].dir == 0");
+        exit(1);
+    }
+
+    int db = inodes[fd].first_block;
+    mydirent *live_d = (mydirent *)dbs[db].data;
+    if (live_d->size >= 10)
+    {
+        perror("live_d->size >= 10");
+        exit(1);
+    }
+
+    int dir = alloc_file(this_p, sizeof(mydirent));
+    live_d->fds[live_d->size++] = dir;
+    inodes[dir].is_file = false;
+    mydirent *new_dir = new mydirent;
+    new_dir->size = 0;
+    for (int i = 0; i < 10; i++)
+    {
+        new_dir->fds[i] = -1;
+    }
+
+    char *newdiraschar = (char *)new_dir;
+    int size = sizeof(mydirent);
+    for (size_t i = 0; i < size; i++)
+    {
+        int relative_block = i / BLOCK_SIZE;
+        int bn;
+        for (int c = relative_block; i < c > 0; c--)
+        {
+            bn = dbs[bn].next_block_num;
+        }
+        int offset = i % BLOCK_SIZE;
+        strcpy(&dbs[bn].data[offset], &newdiraschar[i]);    
+    }
+    new_dir->d_name = this_p;
+    myDIR *res = (myDIR *)malloc(sizeof(myDIR));
+    res->n = dir;
+    return res;   
 }// myopendir
 
 

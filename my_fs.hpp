@@ -1,3 +1,8 @@
+/**
+    we were aided by this site:
+    https://www.youtube.com/watch?v=n2AAhiujAqs&ab_channel=drdelhart
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -15,10 +20,12 @@ typedef struct super_block
     int size_blocks;
 }super_block;
 
+
 typedef struct inode
 {
     int size;
     int first_block;
+    int end_block;
     bool is_file;
     std::string name;
 
@@ -56,7 +63,7 @@ typedef struct my_dir
 typedef struct my_dirent { 
     int size;
     int fds[DIR_SIZE];
-    std::string name;
+    std::string d_name;
 
     my_dirent();
 
@@ -78,6 +85,4 @@ off_t mylseek(int myfd, off_t offset, int whence);
 myDIR *myopendir(const char *name);
 mydirent *myreaddir(myDIR *dirp);
 int myclosedir(myDIR *dirp);
-
-
-void print_fs(); // print out info about file system
+void print_fs();
