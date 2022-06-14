@@ -240,6 +240,7 @@ int myopen(const char *pathname, int flags)
 int myclose(int myfd)
 {
     myopenfile[myfd].set_data(-1,-1,false);
+    return 0;
 }// myclose
 
 
