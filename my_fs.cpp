@@ -23,6 +23,14 @@ disk_block::disk_block()
 }// disk_block
 
 
+super_block::super_block()
+{
+    this->blocks_num = 0;
+    this->inodes_num = 0;
+    this->blocks_size = 0;
+}// super_block
+
+
 my_dirent::my_dirent()
 {
     for (int i = 0; i < MAX_DIR_SIZE; i++)
@@ -50,7 +58,7 @@ void my_file::set_data(int _fd, int _pos)
 int find_empty_block()
 {
     
-    for (int i = 0; i < sb.num_blocks; i++)
+    for (int i = 0; i < sb.blocks_num; i++)
     {
         if (dbs[i].next_block_num == -1)
         {
@@ -63,7 +71,7 @@ int find_empty_block()
 
 int find_empty_inode()
 {
-    for (int i = 0; i < sb.num_inodes; i++)
+    for (int i = 0; i < sb.inodes_num; i++)
     {
         if (inodes[i].first_block == -1)
         {
@@ -190,7 +198,7 @@ myDIR *myopendir(const char *name)
     }
     actuacl_name[j] = '\0';
     
-    for (int i = 0; i < sb.num_inodes; i++)
+    for (int i = 0; i < sb.inodes_num; i++)
     {
         if (!strcmp(inodes[i].name, actuacl_name))
         {
@@ -244,12 +252,12 @@ void sync_fs(const char *file_name)
 
     // inodes
     int i;
-    for (i = 0; i < sb.num_inodes; i++)
+    for (i = 0; i < sb.inodes_num; i++)
     {
         fwrite(&(inodes[i]), sizeof(inode), 1, file);    
     }// write inodes
     
-    for (i = 0; i < sb.num_inodes; i++)
+    for (i = 0; i < sb.inodes_num; i++)
     {
         fwrite(&(dbs[i]), sizeof(disk_block), 1, file);        
     }// write db
@@ -273,11 +281,11 @@ int createfile(const char *path, const char *name)
 void mymkfs(int size)
 {
     int inode_size = sizeof(inode);
-    sb.num_inodes = size / (10*inode_size);
-    inodes = new inode[sb.num_inodes];
+    sb.inodes_num = size / (10*inode_size);
+    inodes = new inode[sb.inodes_num];
     int block_size = sizeof(disk_block); 
-    sb.num_blocks = (size - (sb.num_inodes * inode_size))/block_size;
-    dbs = new disk_block[sb.num_blocks];
+    sb.blocks_num = (size - (sb.inodes_num * inode_size))/block_size;
+    dbs = new disk_block[sb.blocks_num];
     int rootd = alloc_file("root", sizeof(mydirent));
     inodes[rootd].is_file = 1;
 }// mymkfs
@@ -297,12 +305,12 @@ int mymount(const char *source, const char *target, const char *filesystemtype, 
 
         // inodes
         int i;
-        for (i = 0; i < sb.num_inodes; i++)
+        for (i = 0; i < sb.inodes_num; i++)
         {
             fread(&(inodes[i]), sizeof(struct inode), 1, file);
         }// write inodes
         
-        for (i = 0; i < sb.num_blocks; i++)
+        for (i = 0; i < sb.blocks_num; i++)
         {
             fread(&(dbs[i]), sizeof(struct disk_block), 1, file);
         }// write db
@@ -346,7 +354,7 @@ int myopen(const char *pathname, int flags)
     }
     int i;
     // if the path already exist
-    for (i = 0; i < sb.num_inodes; i++)
+    for (i = 0; i < sb.inodes_num; i++)
     {
         if (!strcmp(inodes[i].name, pathname))
         {

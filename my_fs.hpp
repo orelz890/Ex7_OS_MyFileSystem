@@ -12,12 +12,14 @@
 #define MAX_DIR_SIZE 10
 
 
-struct super_block
+typedef struct super_block
 {
-    int num_inodes;
-    int num_blocks;
-    int size_blocks;
-};
+    int inodes_num;
+    int blocks_num;
+    int blocks_size;
+
+    super_block();
+}super_block;
 
 
 typedef struct inode
