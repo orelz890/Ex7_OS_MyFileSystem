@@ -23,7 +23,7 @@ myfile::myfile(const char *pathname, const char *mode) : myfile()
 myFILE* myfopen(const char *pathname, const char *mode)  // Not finished!!!
 {
     // printf("im in 1\n");
-    myFILE *file = new myFILE(pathname, mode); 
+    myFILE *file = new myFILE(pathname, mode);
     inodes[file->fd].is_file = false;
     // printf("im in 2\n");
 

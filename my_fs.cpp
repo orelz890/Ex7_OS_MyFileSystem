@@ -120,7 +120,6 @@ int allocate_file(const char* name, int size)
         inodes[empty_inode].size = size;
         inodes[empty_inode].first_block = first_block;
         dbs[first_block].next_block_num = -2;
-        // inodes[empty_inode].name = name;
         strcpy(inodes[empty_inode].name, name);
         set_filesize(empty_inode, size);
     }
@@ -149,7 +148,7 @@ void write_char(int myfd, char data)
             }
             else if(next_block_num == -1)
             {
-                printf("mywrite - illigal block num..\n");
+                printf("write_char - illigal block num..\n");
                 exit(1);
             }
             curr_block = dbs[curr_block].next_block_num;
@@ -240,19 +239,19 @@ myDIR *myopendir(const char *name)
     }
 
     char *newdiraschar = (char *)new_dir;
-    // write the data
-    for (size_t i = 0; i < sizeof(mydirent); i++)
-    {
-        char* data = &newdiraschar[i];
-        // calculate witch block
-        int relative_block = i / BLOCK_SIZE;
-        // find the block number
-        int bn = find_block_num(dir, relative_block);
-        // calculate the offset in the block
-        int offset = i % BLOCK_SIZE;
-        // wrote the data
-        strcpy(&dbs[bn].data[offset], data);
-    }
+    // // write the data
+    // for (size_t i = 0; i < sizeof(mydirent); i++)
+    // {
+    //     char* data = &newdiraschar[i];
+    //     // calculate witch block
+    //     int relative_block = i / BLOCK_SIZE;
+    //     // find the block number
+    //     int bn = find_block_num(dir, relative_block);
+    //     // calculate the offset in the block
+    //     int offset = i % BLOCK_SIZE;
+    //     // wrote the data
+    //     strcpy(&dbs[bn].data[offset], data);
+    // }
     strcpy(new_dir->d_name, this_p);
     myDIR *res = (myDIR *)malloc(sizeof(myDIR));
     res->n = dir;
@@ -294,7 +293,7 @@ int createfile(const char *path, const char *name)
     mydirent *currdir = myreaddir(dirfd);
     currdir->fds[currdir->size++] = newfd;
     return newfd;
-}
+}// createfile
 
 
 // Initialize new filesystem
@@ -342,7 +341,7 @@ int mymount(const char *source, const char *target, const char *filesystemtype, 
         source == NULL? printf("Source can't be a NULL ptr!\n") : printf("Target can't be a NULL ptr!\n");
         return -1;
     }
-    return 0;                                                                                                          // ?????????????????????????????
+    return 0;                                                                                       // ?????????????????????????????
 }// mymount
 
 
