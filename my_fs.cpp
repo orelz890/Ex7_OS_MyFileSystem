@@ -1,0 +1,538 @@
+/**
+    we were aided by this site:
+    https://www.youtube.com/watch?v=n2AAhiujAqs&ab_channel=drdelhart
+ */
+
+#include "my_fs.hpp"
+#include <string>
+
+#define O_CREAT 0100
+
+inode::inode()
+{
+    this->size = -1;
+    this->first_block = -1;
+    this->end_block = 0;
+    memset(this->name,0,sizeof(this->name));
+    // this->is_file = true;
+}// inode
+
+
+disk_block::disk_block()
+{
+    this->next_block_num = -1;
+}// disk_block
+
+
+my_dirent::my_dirent()
+{
+    for (int i = 0; i < DIR_SIZE; i++)
+    {
+        this->fds[i] = -1;
+    } 
+}// my_dirent
+
+
+my_file::my_file()
+{
+    this->fd = -1;
+    this->pos = -1;
+}// my_file
+
+
+void my_file::set_data(int _fd, int _pos)
+{
+    this->fd = _fd;
+    this->pos = _pos;
+}// set_data
+
+
+int find_empty_block()
+{
+    
+    for (int i = 0; i < sb.num_blocks; i++)
+    {
+        if (dbs[i].next_block_num == -1)
+        {
+            return i;
+        }
+    }
+    return -1;
+}// find_empty_block
+
+
+int find_empty_inode()
+{
+    for (int i = 0; i < sb.num_inodes; i++)
+    {
+        if (inodes[i].first_block == -1)
+        {
+            return i;
+        }
+    }
+    return -1;
+}// find_empty_inode
+
+
+void shorten_file(int bn)
+{
+    int nn = dbs[bn].next_block_num;
+    if (dbs[bn].next_block_num >= 0)
+    {
+        shorten_file(nn);
+    }
+    dbs[bn].next_block_num = -1;
+}// shorten_file
+
+
+void set_filesize(int filenum, int size)
+{
+    int temp = size + BLOCK_SIZE - 1;
+    int num = temp / BLOCK_SIZE;
+    int bn = inodes[filenum].first_block;
+    num--;
+    // grow if necessary
+    while (num > 0)
+    {
+        // check next block number
+        int next_num = dbs[bn].next_block_num;
+        if (next_num == -2)
+        {
+            int empty = find_empty_block();
+            dbs[bn].next_block_num = empty;
+            dbs[empty].next_block_num = -2;
+        }
+        bn = dbs[bn].next_block_num;
+        num--;
+    }
+    // short if necessary
+    shorten_file(bn);
+    dbs[bn].next_block_num = -2;
+}// set_filesize
+
+
+int allocate_file(const char* name, int size)
+{
+    int empty_inode = find_empty_inode();
+    int first_block = find_empty_block();
+    if (empty_inode != -1 && first_block != -1)
+    {   
+        inodes[empty_inode].size = size;
+        inodes[empty_inode].first_block = first_block;
+        dbs[first_block].next_block_num = -2;
+        // inodes[empty_inode].name = name;
+        strcpy(inodes[empty_inode].name, name);
+        set_filesize(empty_inode, size);
+    }
+    else
+    {
+        empty_inode == -1? printf("Dont have enough inodes!\n") : printf("Dont have enough blocks!\n");
+        exit(1);
+    }
+    return empty_inode;
+}// alloc_file
+
+
+void write_char(int myfd, char data)
+{
+        int pos = myopenfile[myfd].pos - BLOCK_SIZE;
+        int curr_block = inodes[myfd].first_block;
+        for(;pos >= BLOCK_SIZE; pos-= BLOCK_SIZE)
+        {
+            int next_block_num = dbs[curr_block].next_block_num;
+            if (next_block_num == -2)
+            {
+                dbs[curr_block].next_block_num = find_empty_block();
+                curr_block = dbs[curr_block].next_block_num;
+                dbs[curr_block].next_block_num = -2;
+                break;
+            }
+            else if(next_block_num == -1)
+            {
+                printf("mywrite - illigal block num..\n");
+                exit(1);
+            }
+            curr_block = dbs[curr_block].next_block_num;
+        }
+        if (pos > inodes[myfd].size)
+        {
+            inodes[myfd].size = pos + 1;
+        }
+        dbs[curr_block].data[pos] = data;
+}// write_char
+
+
+// =============================== left to devide into several func and change ======================
+
+int find_block_num(int file, int offeset)                          // not finished
+{
+    int bn = inodes[file].first_block;
+    for (int togo = offeset; togo > 0; togo--)
+    {
+        bn = dbs[bn].next_block_num;
+    }
+    return bn;
+}// find_block_num
+
+
+myDIR *myopendir(const char *name)
+{
+    char str[80];
+    strcpy(str, name);
+    char *choset;
+    const char mak[2] = "/";
+    choset = strtok(str, mak);
+    char this_p[NAME_SIZE] = "";
+    char last_p[NAME_SIZE] = "";
+
+    while (choset != NULL)
+    {
+        strcpy(last_p, this_p);
+        strcpy(this_p, choset);
+        choset = strtok(NULL, mak);
+    }
+
+    for (int i = 0; i < sb.num_inodes; i++)
+    {
+        if (!strcmp(inodes[i].name, this_p))
+        {
+            if (inodes[i].is_file != 1)
+            {
+                printf("%s\n", inodes[i].name);
+                perror("myopendir - its not a dir");
+                exit(1);
+            }
+            myDIR *res = (myDIR *)malloc(sizeof(myDIR));
+            res-> n =i;
+            return res;
+        }
+    }
+
+    int fd = myopendir(last_p)->n;
+    if (fd == -1)
+    {
+        perror("fd == -1");
+        exit(1);
+    }
+
+    if (inodes[fd].is_file == 0)
+    {
+        perror("myopendir - its a file not a dir");
+        exit(1);
+    }
+
+    int db = inodes[fd].first_block;
+    mydirent *live_d = (mydirent *)dbs[db].data;
+    if (live_d->size >= 10)
+    {
+        perror("myopendir - no room left only 10 allowed");
+        exit(1);
+    }
+
+    int dir = allocate_file(this_p, sizeof(mydirent));
+    live_d->fds[live_d->size++] = dir;
+    inodes[dir].is_file = 1;
+    mydirent *new_dir = new mydirent;
+    new_dir->size = 0;
+    for (int i = 0; i < 10; i++)
+    {
+        new_dir->fds[i] = -1;
+    }
+
+    char *newdiraschar = (char *)new_dir;
+    // write the data
+    for (size_t i = 0; i < sizeof(mydirent); i++)
+    {
+        char* data = &newdiraschar[i];
+        // calculate witch block
+        int relative_block = i / BLOCK_SIZE;
+        // find the block number
+        int bn = find_block_num(dir, relative_block);
+        // calculate the offset in the block
+        int offset = i % BLOCK_SIZE;
+        // wrote the data
+        strcpy(&dbs[bn].data[offset], data);
+    }
+    strcpy(new_dir->d_name, this_p);
+    myDIR *res = (myDIR *)malloc(sizeof(myDIR));
+    res->n = dir;
+    return res;
+}//myopendir
+
+
+//========================================= finished implemantation below ==============================
+
+
+// write the file system
+void sync_fs(const char *file_name)
+{
+    FILE *file = fopen(file_name, "w+");
+    // super block
+    fwrite(&sb, sizeof(super_block), 1, file);
+
+    // inodes
+    int i;
+    for (i = 0; i < sb.num_inodes; i++)
+    {
+        fwrite(&(inodes[i]), sizeof(inode), 1, file);    
+    }// write inodes
+    
+    for (i = 0; i < sb.num_inodes; i++)
+    {
+        fwrite(&(dbs[i]), sizeof(disk_block), 1, file);        
+    }// write db
+
+    fclose(file);
+}// sync_fs
+
+
+// retrun file discriptor
+int createfile(const char *path, const char *name)
+{
+    int newfd = allocate_file(name, sizeof(mydirent));
+    myDIR *dirfd = myopendir(path);
+    mydirent *currdir = myreaddir(dirfd);
+    currdir->fds[currdir->size++] = newfd;
+    return newfd;
+}
+
+
+// Initialize new filesystem
+void mymkfs(int size)
+{
+    int inode_size = sizeof(inode);
+    sb.num_inodes = size / (10*inode_size);
+    inodes = new inode[sb.num_inodes];
+    int block_size = sizeof(disk_block); 
+    sb.num_blocks = (size - (sb.num_inodes * inode_size))/block_size;
+    dbs = new disk_block[sb.num_blocks];
+    int rootd = allocate_file("root", sizeof(mydirent));
+    inodes[rootd].is_file = 1;
+}// mymkfs
+
+
+int mymount(const char *source, const char *target, const char *filesystemtype, unsigned long mountflags, const void *data)
+{
+    if (source != NULL && target != NULL)
+    {
+        // write the file system
+        sync_fs(source);
+
+        // read to the dest file
+        FILE *file = fopen(target, "r");
+        // super block
+        fread(&sb, sizeof(struct super_block), 1, file);
+
+        // inodes
+        int i;
+        for (i = 0; i < sb.num_inodes; i++)
+        {
+            fread(&(inodes[i]), sizeof(struct inode), 1, file);
+        }// write inodes
+        
+        for (i = 0; i < sb.num_blocks; i++)
+        {
+            fread(&(dbs[i]), sizeof(struct disk_block), 1, file);
+        }// write db
+        
+        fclose(file);
+    }
+    else
+    {
+        source == NULL? printf("Source can't be a NULL ptr!\n") : printf("Target can't be a NULL ptr!\n");
+        return -1;
+    }
+    return 0;                                                                                                          // ?????????????????????????????
+}// mymount
+
+
+char* get_file_name(const char* pathname)
+{
+    int i = 0, j = 0;
+    char* name = new char[50];
+    while(pathname[i])
+    {
+        if (pathname[i] != '/')
+        {
+            name[j++] = pathname[i++];
+        }
+        else
+        {
+            memset(name,0,sizeof(name));
+        }
+    }
+    return name;
+} // get_file_name
+
+
+int myopen(const char *pathname, int flags)
+{ 
+    if (pathname == NULL)
+    {
+        printf("path can't be NULL ptr!\n");
+        exit(1);
+    }
+    int i;
+    // if the path already exist
+    for (i = 0; i < sb.num_inodes; i++)
+    {
+        if (!strcmp(inodes[i].name, pathname))
+        {
+            if (inodes[i].is_file == 1)
+            {
+                printf("This is a dir inode..\n");
+                exit(1);
+            }
+            myopenfile[i].set_data(i,0);
+            return i;
+        }
+    }
+    // else
+    char* name = get_file_name(pathname);
+    // printf("name = %s\n",name);
+    int fd = createfile("root", pathname);
+
+    // int fd = createfile(name, pathname);                                   // why its not working??????????
+    myopenfile[fd].set_data(fd,0);
+    delete name;
+    return fd;
+    // int fd = allocate_file("name", sizeof(mydirent));
+    // myopenfile[fd].set_data(fd,0);
+    // mydirent* dir = myreaddir(myopendir(pathname));
+    // dir->fds[dir->size++] = fd;
+    // return fd;
+}// myopen
+
+
+int myclose(int myfd)
+{
+    myopenfile[myfd].set_data(-1,-1);
+    return 0;
+}// myclose
+
+
+
+size_t myread(int myfd, void *buf, size_t count)
+{
+    if (buf == NULL )
+    {
+        printf("myread - buf can't be a NULL ptr..\n");
+        exit(1);
+    }
+    if (inodes[myfd].is_file == 1 || myopenfile[myfd].fd != myfd)
+    {
+        printf("myread - prob with myfd.. %d == %d\n",myopenfile[myfd].fd, myfd);
+        exit(1);
+    }
+    char temp[count + 1];
+    for (int i = 0; i < count; i++)
+    {
+        int pos = myopenfile[myfd].pos - BLOCK_SIZE;
+        int curr_block = inodes[myfd].first_block;
+        for(;pos >= BLOCK_SIZE; pos-= BLOCK_SIZE)
+        {
+            curr_block = dbs[curr_block].next_block_num;
+            if (curr_block < 0)
+            {
+                printf("myread - curr_block");
+                exit(1);
+            }
+        }
+        temp[i] = dbs[curr_block].data[pos];
+        myopenfile[myfd].pos++;
+    }
+    strncpy((char*)buf, temp, count);
+    return myopenfile[myfd].pos;
+}// myread
+
+
+size_t mywrite(int myfd, const void *buf, size_t count)
+{
+    if (buf == NULL )
+    {
+        printf("mywrite - buf can't be a NULL ptr..\n");
+        exit(1);
+    }
+    if (inodes[myfd].is_file == 1 || myopenfile[myfd].fd != myfd)
+    {
+        printf("mywrite- prob with myfd.. %d == %d\n",myopenfile[myfd].fd,myfd);
+        exit(1);
+    }
+    char* buff = (char*)buf;
+    for (int i = 0; i < count; i++)
+    {
+        inodes[myfd].end_block++;
+        write_char(myfd, buff[i]);
+
+        myopenfile[myfd].pos++;
+    }
+    return myopenfile[myfd].pos;
+}// mywrite
+
+
+
+off_t mylseek(int myfd, off_t offset, int whence)
+{
+    if (myopenfile[myfd].fd == myfd)
+    {
+        myopenfile[myfd].pos = myopenfile[myfd].pos < 0? 0 : myopenfile[myfd].pos; 
+        if (whence == SEEK_CUR)
+        {
+            myopenfile[myfd].pos += offset;
+        }
+        else if (whence == SEEK_SET)
+        {
+            myopenfile[myfd].pos = offset;
+        }
+        else if (whence == SEEK_END)
+        {
+            myopenfile[myfd].pos += inodes[myfd].end_block;
+        }
+        return myopenfile[myfd].pos;
+    }
+    printf("mylseek - myfd is not valid..\n");
+    exit(1);
+}// mylseek
+
+
+mydirent *myreaddir(myDIR *dirp)
+{
+    if (inodes[dirp->n].is_file == 0)
+    {
+        printf("myreaddir - inode prob..\n");
+        exit(1);
+    }
+    int curr_block = inodes[dirp->n].first_block;
+    return (mydirent*)dbs[curr_block].data;
+}// myreaddir
+
+
+int myclosedir(myDIR *dirp)
+{
+    dirp->n = -1;
+    memset(dirp->d_name,0,sizeof(dirp->d_name));
+    return 0;
+}// myclosedir
+
+
+void print_fs()
+{
+    printf("superblock info\n");
+    printf("\tnum_inodes %d\n", sb.num_inodes);
+    printf("\tnum_blocks %d\n", sb.num_blocks);
+    printf("\tsize_blocks %d\n", sb.size_blocks);
+
+    printf("inodes:\n");
+    for (int i = 0; i < sb.num_inodes; i++)
+    {
+        printf("\tname %s\n", inodes[i].name);
+        printf("\tsize %d\n", inodes[i].size);
+        printf("\tfirst_block %d\n\n", inodes[i].first_block);
+    }
+    // dbs
+    printf("block:\n");
+    for (int i = 0; i < sb.num_blocks; i++)
+    {
+        printf("\tblock num: %d next block %d\n\n", i, dbs[i].next_block_num);
+    }
+}// print_fs

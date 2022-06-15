@@ -1,24 +1,24 @@
 /**
-    we were aided by this site:
-    https://www.youtube.com/watch?v=n2AAhiujAqs&ab_channel=drdelhart
+ * we get help from:
+ * https://www.youtube.com/watch?v=n2AAhiujAqs&ab_channel=drdelhart
  */
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <string>
 #include <string.h>
 
+#define PATH_MAX 128
 #define BLOCK_SIZE 512
 #define MAX_FILES 10000
+#define NAME_SIZE 8
 #define DIR_SIZE 10
 
 
-typedef struct super_block
+struct super_block
 {
     int num_inodes;
     int num_blocks;
     int size_blocks;
-}super_block;
+};
 
 
 typedef struct inode
@@ -26,8 +26,8 @@ typedef struct inode
     int size;
     int first_block;
     int end_block;
-    bool is_file;
-    std::string name;
+    int is_file;
+    char name[NAME_SIZE + 1];
 
     inode();
 }inode;
@@ -46,29 +46,26 @@ typedef struct my_file
 {
     int fd;
     int pos;
-    bool is_opened;
 
     my_file();
-    void set_data(int _fd, int _pos, bool _is_opened);
+    void set_data(int _fd, int _pos);
 }my_file;
 
 
 typedef struct my_dir 
 {
     int n;
-    std::string name;
-} myDIR;
+    char *d_name;
+}myDIR;
 
 
 typedef struct my_dirent { 
     int size;
     int fds[DIR_SIZE];
-    std::string d_name;
+    char d_name[NAME_SIZE+1];
 
     my_dirent();
-
 }mydirent;
-
 
 my_file myopenfile[MAX_FILES];
 super_block sb;
@@ -85,4 +82,6 @@ off_t mylseek(int myfd, off_t offset, int whence);
 myDIR *myopendir(const char *name);
 mydirent *myreaddir(myDIR *dirp);
 int myclosedir(myDIR *dirp);
-void print_fs();
+
+
+void print_fs(); // print out info about file system
