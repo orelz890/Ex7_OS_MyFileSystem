@@ -25,11 +25,11 @@ typedef struct super_block
 
 typedef struct inode
 {
+    char name[MAX_NAME_SIZE + 1];
     int size;
+    int is_file;
     int first_block;
     int end_block;
-    int is_file;
-    char name[MAX_NAME_SIZE + 1];
 
     inode();
 }inode;
@@ -37,8 +37,8 @@ typedef struct inode
 
 typedef struct disk_block
 {
-    int next_block_num;
     char data[MAX_BLOCK_SIZE];
+    int next_block;
 
     disk_block();   
 }disk_block;
@@ -46,8 +46,8 @@ typedef struct disk_block
 
 typedef struct my_file 
 {
-    int fd;
     int pos;
+    int fd;
 
     my_file();
     void set_data(int _fd, int _pos);
@@ -56,15 +56,15 @@ typedef struct my_file
 
 typedef struct my_dir 
 {
-    int n;
-    char *d_name;
+    int num;
+    char *name;
 }myDIR;
 
 
 typedef struct my_dirent { 
-    int size;
-    int fds[MAX_DIR_SIZE];
     char d_name[MAX_NAME_SIZE];
+    int fds[MAX_DIR_SIZE];
+    int size;
 
     my_dirent();
 }mydirent;

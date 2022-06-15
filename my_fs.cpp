@@ -15,7 +15,7 @@ inode::inode()
 
 disk_block::disk_block()
 {
-    this->next_block_num = -1;
+    this->next_block = -1;
 }// disk_block
 
 
@@ -56,7 +56,7 @@ int find_empty_block()
     
     for (int i = 0; i < sb.blocks_num; i++)
     {
-        if (dbs[i].next_block_num == -1)
+        if (dbs[i].next_block == -1)
         {
             return i;
         }
@@ -80,12 +80,12 @@ int find_empty_inode()
 
 void shorten_file(int bn)
 {
-    int nn = dbs[bn].next_block_num;
-    if (dbs[bn].next_block_num >= 0)
+    int nn = dbs[bn].next_block;
+    if (dbs[bn].next_block >= 0)
     {
         shorten_file(nn);
     }
-    dbs[bn].next_block_num = -1;
+    dbs[bn].next_block = -1;
 }// shorten_file
 
 
@@ -99,19 +99,19 @@ void set_filesize(int filenum, int size)
     while (num > 0)
     {
         // check next block number
-        int next_num = dbs[bn].next_block_num;
+        int next_num = dbs[bn].next_block;
         if (next_num == -2)
         {
             int empty = find_empty_block();
-            dbs[bn].next_block_num = empty;
-            dbs[empty].next_block_num = -2;
+            dbs[bn].next_block = empty;
+            dbs[empty].next_block = -2;
         }
-        bn = dbs[bn].next_block_num;
+        bn = dbs[bn].next_block;
         num--;
     }
     // short if necessary
     shorten_file(bn);
-    dbs[bn].next_block_num = -2;
+    dbs[bn].next_block = -2;
 }// set_filesize
 
 
@@ -123,7 +123,7 @@ int alloc_file(const char* name, int size)
     {   
         inodes[empty_inode].size = size;
         inodes[empty_inode].first_block = first_block;
-        dbs[first_block].next_block_num = -2;
+        dbs[first_block].next_block = -2;
         strcpy(inodes[empty_inode].name, name);
         set_filesize(empty_inode, size);
     }
@@ -142,12 +142,12 @@ void write_char(int myfd, char data)
         int curr_block = inodes[myfd].first_block;
         for(;pos >= MAX_BLOCK_SIZE; pos-= MAX_BLOCK_SIZE)
         {
-            int next_block_num = dbs[curr_block].next_block_num;
+            int next_block_num = dbs[curr_block].next_block;
             if (next_block_num == -2)
             {
-                dbs[curr_block].next_block_num = find_empty_block();
-                curr_block = dbs[curr_block].next_block_num;
-                dbs[curr_block].next_block_num = -2;
+                dbs[curr_block].next_block = find_empty_block();
+                curr_block = dbs[curr_block].next_block;
+                dbs[curr_block].next_block = -2;
                 break;
             }
             else if(next_block_num == -1)
@@ -155,7 +155,7 @@ void write_char(int myfd, char data)
                 printf("write_char - illigal block num..\n");
                 exit(1);
             }
-            curr_block = dbs[curr_block].next_block_num;
+            curr_block = dbs[curr_block].next_block;
         }
         if (pos > inodes[myfd].size)
         {
@@ -170,7 +170,7 @@ int find_block_num(int file, int offeset)
     int bn = inodes[file].first_block;
     for (int i = offeset; i > 0; i--)
     {
-        bn = dbs[bn].next_block_num;
+        bn = dbs[bn].next_block;
     }
     return bn;
 }// find_block_num
@@ -204,7 +204,7 @@ myDIR *myopendir(const char *name)
                 exit(1);
             }
             myDIR *res = new myDIR;
-            res->n = i;
+            res->num = i;
             return res;
         }
     }
@@ -227,7 +227,7 @@ myDIR *myopendir(const char *name)
         mydirent *new_dir = new mydirent;
         strcpy(new_dir->d_name, actuacl_name);
         myDIR *res = new myDIR;
-        res->n = dir;
+        res->num = dir;
         return res;
     }
     else
@@ -397,7 +397,7 @@ size_t myread(int myfd, void *buf, size_t count)
         int curr_block = inodes[myfd].first_block;
         for(;pos >= MAX_BLOCK_SIZE; pos-= MAX_BLOCK_SIZE)
         {
-            curr_block = dbs[curr_block].next_block_num;
+            curr_block = dbs[curr_block].next_block;
             if (curr_block < 0)
             {
                 printf("myread - curr_block");
@@ -463,19 +463,19 @@ off_t mylseek(int myfd, off_t offset, int whence)
 
 mydirent *myreaddir(myDIR *dirp)
 {
-    if (inodes[dirp->n].is_file == 0)
+    if (inodes[dirp->num].is_file == 0)
     {
         printf("myreaddir - inode prob..\n");
         exit(1);
     }
-    int curr_block = inodes[dirp->n].first_block;
+    int curr_block = inodes[dirp->num].first_block;
     return (mydirent*)dbs[curr_block].data;
 }// myreaddir
 
 
 int myclosedir(myDIR *dirp)
 {
-    dirp->n = -1;
-    memset(dirp->d_name,0,sizeof(dirp->d_name));
+    dirp->num = -1;
+    memset(dirp->name,0,sizeof(dirp->name));
     return 0;
 }// myclosedir
