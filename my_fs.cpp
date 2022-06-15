@@ -25,7 +25,7 @@ disk_block::disk_block()
 
 my_dirent::my_dirent()
 {
-    for (int i = 0; i < DIR_SIZE; i++)
+    for (int i = 0; i < MAX_DIR_SIZE; i++)
     { 
         this->fds[i] = -1;
     } 
@@ -87,8 +87,8 @@ void shorten_file(int bn)
 
 void set_filesize(int filenum, int size)
 {
-    int temp = size + BLOCK_SIZE - 1;
-    int num = temp / BLOCK_SIZE;
+    int temp = size + MAX_BLOCK_SIZE - 1;
+    int num = temp / MAX_BLOCK_SIZE;
     int bn = inodes[filenum].first_block;
     num--;
     // grow if necessary
@@ -134,9 +134,9 @@ int alloc_file(const char* name, int size)
 
 void write_char(int myfd, char data)
 {
-        int pos = myopenfile[myfd].pos - BLOCK_SIZE;
+        int pos = myopenfile[myfd].pos - MAX_BLOCK_SIZE;
         int curr_block = inodes[myfd].first_block;
-        for(;pos >= BLOCK_SIZE; pos-= BLOCK_SIZE)
+        for(;pos >= MAX_BLOCK_SIZE; pos-= MAX_BLOCK_SIZE)
         {
             int next_block_num = dbs[curr_block].next_block_num;
             if (next_block_num == -2)
@@ -360,19 +360,9 @@ int myopen(const char *pathname, int flags)
         }
     }
     // else
-    char* name = get_file_name(pathname);
-    // printf("name = %s\n",name);
     int fd = createfile("root", pathname);
-
-    // int fd = createfile(name, pathname);                                   // why its not working??????????
     myopenfile[fd].set_data(fd,0);
-    delete name;
     return fd;
-    // int fd = alloc_file("name", sizeof(mydirent));
-    // myopenfile[fd].set_data(fd,0);
-    // mydirent* dir = myreaddir(myopendir(pathname));
-    // dir->fds[dir->size++] = fd;
-    // return fd;
 }// myopen
 
 
@@ -399,9 +389,9 @@ size_t myread(int myfd, void *buf, size_t count)
     char temp[count + 1];
     for (int i = 0; i < count; i++)
     {
-        int pos = myopenfile[myfd].pos - BLOCK_SIZE;
+        int pos = myopenfile[myfd].pos - MAX_BLOCK_SIZE;
         int curr_block = inodes[myfd].first_block;
-        for(;pos >= BLOCK_SIZE; pos-= BLOCK_SIZE)
+        for(;pos >= MAX_BLOCK_SIZE; pos-= MAX_BLOCK_SIZE)
         {
             curr_block = dbs[curr_block].next_block_num;
             if (curr_block < 0)

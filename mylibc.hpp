@@ -1,10 +1,9 @@
-
 #include<stdio.h>
-
 
 typedef struct myfile{
     int fd;
     char mode[3];
+
     myfile();
     myfile(const char *pathname, const char *mode);
 }myFILE;

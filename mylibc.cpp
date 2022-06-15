@@ -13,9 +13,7 @@ myfile::myfile()
 
 myfile::myfile(const char *pathname, const char *mode) : myfile()
 {
-    // printf("im in 1.1\n");
     this->fd = myopen(pathname, 0); 
-    // printf("im in 1.2\n");
     strcpy(this->mode, mode);
 }
 
@@ -114,9 +112,9 @@ int argSize(const char c)
 // https://iq.opengenus.org/how-printf-and-scanf-function-works-in-c-internally/
 int myfscanf(myFILE *stream, const char *format, ...)
 {
-    // The va_start function contains the code to initialize the va_list with the correct stack pointer. It must be passed the last named argument in the function declaration or it will not work.
     int str_size = strlen(format);
     va_list vl;
+    // The va_start function contains the code to initialize the va_list with the correct stack pointer.
     va_start(vl, format);
     unsigned long arg_size = 0;
     int counter = 0;

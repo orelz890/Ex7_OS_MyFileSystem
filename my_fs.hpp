@@ -6,11 +6,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define PATH_MAX 128
-#define BLOCK_SIZE 512
+#define MAX_BLOCK_SIZE 512
 #define MAX_FILES 10000
-#define NAME_SIZE 50
-#define DIR_SIZE 10
+#define MAX_NAME_SIZE 50
+#define MAX_DIR_SIZE 10
 
 
 struct super_block
@@ -27,7 +26,7 @@ typedef struct inode
     int first_block;
     int end_block;
     int is_file;
-    char name[NAME_SIZE + 1];
+    char name[MAX_NAME_SIZE + 1];
 
     inode();
 }inode;
@@ -36,7 +35,7 @@ typedef struct inode
 typedef struct disk_block
 {
     int next_block_num;
-    char data[BLOCK_SIZE];
+    char data[MAX_BLOCK_SIZE];
 
     disk_block();   
 }disk_block;
@@ -61,8 +60,8 @@ typedef struct my_dir
 
 typedef struct my_dirent { 
     int size;
-    int fds[DIR_SIZE];
-    char d_name[NAME_SIZE+1];
+    int fds[MAX_DIR_SIZE];
+    char d_name[MAX_NAME_SIZE];
 
     my_dirent();
 }mydirent;

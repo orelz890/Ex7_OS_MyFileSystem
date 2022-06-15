@@ -83,7 +83,6 @@ int main(int argc, char const *argv[])
 
         myfclose(myfd);
         printf("Test 18: close the file successfully\n");
-
     }
 
     printf("\nAll tests are done!!\n");
