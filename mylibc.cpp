@@ -20,23 +20,19 @@ myfile::myfile(const char *pathname, const char *mode) : myfile()
 }
 
 
-myFILE* myfopen(const char *pathname, const char *mode)  // Not finished!!!
+myFILE* myfopen(const char *pathname, const char *mode)
 {
-    // printf("im in 1\n");
     myFILE *file = new myFILE(pathname, mode);
     inodes[file->fd].is_file = false;
-    // printf("im in 2\n");
 
     if (strlen(mode) > 0)
     {
         if (mode[0] == 'w')
         {
-            // printf("im in 3\n");
             inodes[file->fd].end_block = 0;
         }
         else if (mode[0] == 'a')
         {
-            // printf("im in 4\n");
             mylseek(file->fd, 0, SEEK_END);
         }
     }

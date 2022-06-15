@@ -9,7 +9,7 @@
 #define PATH_MAX 128
 #define BLOCK_SIZE 512
 #define MAX_FILES 10000
-#define NAME_SIZE 8
+#define NAME_SIZE 50
 #define DIR_SIZE 10
 
 
@@ -82,6 +82,3 @@ off_t mylseek(int myfd, off_t offset, int whence);
 myDIR *myopendir(const char *name);
 mydirent *myreaddir(myDIR *dirp);
 int myclosedir(myDIR *dirp);
-
-
-void print_fs(); // print out info about file system
