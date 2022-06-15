@@ -1,7 +1,3 @@
-/**
-    we were aided by this site:
-    https://www.youtube.com/watch?v=n2AAhiujAqs&ab_channel=drdelhart
- */
 
 #include "my_fs.hpp"
 #include <string>

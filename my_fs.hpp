@@ -1,7 +1,8 @@
 /**
- * we get help from:
- * https://www.youtube.com/watch?v=n2AAhiujAqs&ab_channel=drdelhart
+    we were aided by this site:
+    https://www.youtube.com/watch?v=n2AAhiujAqs&ab_channel=drdelhart
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
